@@ -1,5 +1,7 @@
 #!/usr/bin/env groovy
 
+def gv
+
 pipeline {
     agent any
     parameters {
@@ -7,9 +9,18 @@ pipeline {
         booleanParam(name: 'executeTests', defaultValue: true, description: '')
     }
     stages {
+        stage("init") {
+            steps {
+                script {
+                   gv = load "script.groovy"
+                }
+            }
+        }
         stage("build") {
             steps {
-                echo "building the application...."
+                script {
+                    gv.buildApp()
+                }
             }
         }
         stage("test") {
@@ -19,13 +30,19 @@ pipeline {
                 }
             }
             steps {
-                    echo "testing the application...."
+                script {
+                    gv.testApp()
+                }
             }
         }
         stage("deploy") {
             steps {
-                    echo "Deploying application..."
-                    echo "Deploying version ${params.VERSION}"
+                script {
+                    env.ENV = input message: "Select the environment to deploy to", ok: "Done", parameters: [choice(name: 'ONE', choices: ['dev', 'staging', 'prod'], description: '')]
+
+                    gv.deployApp()
+                    echo "Deploying to ${ENV}"
+                }
             }
         }
     }
